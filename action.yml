@@ -1,5 +1,7 @@
 name: 'Ghost Publish Action'
-description: 'Publishes markdown to Ghost'
+author: 'Rohit <@milliondreams>'
+
+description: 'Publishes markdown to Ghost as post draft'
 inputs:
   ghost_api_url:
     description: 'Ghost API URL'
