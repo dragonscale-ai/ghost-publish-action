@@ -140,6 +140,7 @@ function extractImagePaths(markdownContent) {
  */
 async function uploadImageToGhost(imagePath) {
     const FormData = require('form-data');
+    const fs = require('fs');
 
     const formData = new FormData();
     formData.append('file', fs.createReadStream(imagePath));
