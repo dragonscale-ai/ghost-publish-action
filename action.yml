@@ -1,0 +1,12 @@
+name: 'Ghost Publish Action'
+description: 'Publishes markdown to Ghost'
+inputs:
+  ghost_api_url:
+    description: 'Ghost API URL'
+    required: true
+  ghost_admin_api_key:
+    description: 'Ghost Admin API Key'
+    required: true
+runs:
+  using: 'node12'
+  main: 'dist/index.js'

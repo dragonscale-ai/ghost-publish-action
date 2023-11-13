@@ -1,0 +1,14 @@
+{
+  "name": "ghost-publish-action",
+  "version": "1.0.0",
+  "description": "A GitHub Action to publish Markdown files to Ghost",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@tryghost/admin-api": "^1.13.10",
+    "form-data": "^4.0.0",
+    "markdown-it": "^13.0.2"
+  }
+}
