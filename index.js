@@ -1,19 +1,32 @@
-const GhostAdminAPI = require('@tryghost/admin-api');
-const fs = require('fs');
-const path = require('path');
-const FormData = require('form-data');
+const { execSync } = require('child_process');
 
-// Initialize the Ghost Admin API client
-const api = new GhostAdminAPI({
-    url: process.env.GHOST_API_URL,
-    key: process.env.GHOST_ADMIN_API_KEY,
-    version: 'v3'
-});
+function installDependencies() {
+    try {
+        // Run yarn install or npm install
+        execSync('yarn install', { stdio: 'inherit' });
+        console.log('Dependencies installed successfully.');
+    } catch (error) {
+        console.error('Error installing dependencies:', error);
+        process.exit(1); // Exit if installation fails
+    }
+}
 
 /**
  * Main function for the action
  */
 async function main() {
+    installDependencies()
+
+    const GhostAdminAPI = require('@tryghost/admin-api');
+    const fs = require('fs');
+
+    // Initialize the Ghost Admin API client
+    const api = new GhostAdminAPI({
+        url: process.env.GHOST_API_URL,
+        key: process.env.GHOST_ADMIN_API_KEY,
+        version: 'v3'
+    });
+
     try {
         const latestMdFile = getLatestFile('.md');
         let markdownContent = fs.readFileSync(latestMdFile, 'utf8');
@@ -102,6 +115,8 @@ function extractImagePaths(markdownContent) {
  * Upload an image file to Ghost and return the uploaded image URL
  */
 async function uploadImageToGhost(imagePath) {
+    const FormData = require('form-data');
+
     const formData = new FormData();
     formData.append('file', fs.createReadStream(imagePath));
     formData.append('purpose', 'image');
