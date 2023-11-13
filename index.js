@@ -31,7 +31,7 @@ async function main() {
     try {
         const latestMdFile = getLatestFile('.md');
         let markdownContent = fs.readFileSync(latestMdFile, 'utf8');
-        
+
         // Upload images and update Markdown content
         markdownContent = await uploadImagesAndReplaceUrls(markdownContent);
 
@@ -60,9 +60,18 @@ async function main() {
  */
 function getLatestFile(extension) {
     try {
-        const command = `git diff --name-only HEAD HEAD~1 | grep '\.${extension}$'`;
+        // Print the current working directory
+        console.log('Current working directory:', __dirname);
+
+        // List the contents of the current directory
+        console.log('Directory contents:', execSync('ls -la').toString());
+
+        // Execute the Git command
+        const command = `git diff --name-only HEAD HEAD~1 -- '*.${extension}'`;
+        console.log('Executing command:', command); // Debug log
         const latestFile = execSync(command).toString().trim();
-        return latestFile;
+        console.log('Found file:', latestFile); // Debug log
+        return latestFile || null;
     } catch (error) {
         console.error('Error finding the latest file:', error);
         return null;
@@ -123,7 +132,7 @@ async function uploadImageToGhost(imagePath) {
     formData.append('purpose', 'image');
 
     try {
-        const uploadedImage = await api.images.upload({file: formData});
+        const uploadedImage = await api.images.upload({ file: formData });
         return uploadedImage.url;
     } catch (error) {
         console.error('Error uploading image to Ghost:', error);
