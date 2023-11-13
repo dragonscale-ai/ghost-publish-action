@@ -69,8 +69,11 @@ function getLatestFile(extension) {
         // List the contents of the current directory
         console.log('Directory contents:', execSync('ls -la').toString());
 
+        // Show git log
+        console.log("Git log:\n", execSync('git log --oneline -n 5').toString());
+
         // Execute the Git command
-        const command = `git diff --name-only HEAD -- '*.${extension}'`;
+        const command = `git diff --name-only HEAD HEAD~1 | grep '*.${extension}'`;
         console.log('Executing command:', command); // Debug log
         const latestFile = execSync(command).toString().trim();
         console.log('Found file:', latestFile); // Debug log
