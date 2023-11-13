@@ -23,9 +23,9 @@ async function main() {
 
     // Initialize the Ghost Admin API client
     const api = new GhostAdminAPI({
-        url: process.env.GHOST_API_URL,
-        key: process.env.GHOST_ADMIN_API_KEY,
-        version: 'v3'
+        url: process.env.INPUT_GHOST_API_URL,
+        key: process.env.INPUT_GHOST_ADMIN_API_KEY,
+        version: 'v5.0'
     });
 
     try {
