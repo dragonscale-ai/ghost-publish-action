@@ -139,16 +139,9 @@ function extractImagePaths(markdownContent) {
 /**
  * Upload an image file to Ghost and return the uploaded image URL
  */
-async function uploadImageToGhost(api, imagePath) {
-    const FormData = require('form-data');
-    const fs = require('fs');
-
-    const formData = new FormData();
-    formData.append('file', fs.createReadStream(imagePath));
-    formData.append('purpose', 'image');
-
+async function uploadImageToGhost(imagePath) {
     try {
-        const uploadedImage = await api.images.upload({ file: formData });
+        const uploadedImage = await api.images.upload({ file: imagePath });
         return uploadedImage.url;
     } catch (error) {
         console.error('Error uploading image to Ghost:', error);
