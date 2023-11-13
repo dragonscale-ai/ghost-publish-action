@@ -41,7 +41,7 @@ async function main() {
         let markdownContent = fs.readFileSync(latestMdFile, 'utf8');
 
         // Upload images and update Markdown content
-        markdownContent = await uploadImagesAndReplaceUrls(markdownContent);
+        markdownContent = await uploadImagesAndReplaceUrls(api, markdownContent);
 
         const htmlContent = convertMarkdownToHTML(markdownContent); // Implement this function
         const jsonMetadataFile = latestMdFile.replace('.md', '.json');
@@ -104,13 +104,13 @@ function convertMarkdownToHTML(markdown) {
 /**
  * Upload images found in Markdown content to Ghost and replace local URLs
  */
-async function uploadImagesAndReplaceUrls(markdownContent) {
+async function uploadImagesAndReplaceUrls(api, markdownContent) {
     let updatedMarkdownContent = markdownContent;
     const imagePaths = extractImagePaths(markdownContent);
 
     for (let imagePath of imagePaths) {
         try {
-            const uploadedImageUrl = await uploadImageToGhost(imagePath);
+            const uploadedImageUrl = await uploadImageToGhost(api, imagePath);
             updatedMarkdownContent = updatedMarkdownContent.replace(imagePath, uploadedImageUrl);
         } catch (error) {
             console.error('Error uploading image:', error);
@@ -138,7 +138,7 @@ function extractImagePaths(markdownContent) {
 /**
  * Upload an image file to Ghost and return the uploaded image URL
  */
-async function uploadImageToGhost(imagePath) {
+async function uploadImageToGhost(api, imagePath) {
     const FormData = require('form-data');
     const fs = require('fs');
 
