@@ -33,7 +33,7 @@ async function main() {
     try {
         const latestMdFile = getLatestFile('.md');
 
-        if (latestMdFile == "") {
+        if (latestMdFile == null | latestMdFile == "") {
             console.log("No markdown in HEAD commit");
             process.exit(0);
         }
@@ -81,7 +81,7 @@ function getLatestFile(extension) {
         console.log("Git log:\n", execSync('git log --oneline -n 5').toString());
 
         // Execute the Git command
-        const command = `git diff-tree --no-commit-id --name-only HEAD -r | grep '*.${extension}'`;
+        const command = `git diff-tree --no-commit-id --name-only HEAD -r | grep '${extension}$'`;
         console.log('Executing command:', command); // Debug log
         const latestFile = execSync(command).toString().trim();
         console.log('Found file:', latestFile); // Debug log
