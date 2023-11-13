@@ -114,6 +114,7 @@ async function uploadImagesAndReplaceUrls(api, markdownContent) {
             updatedMarkdownContent = updatedMarkdownContent.replace(imagePath, uploadedImageUrl);
         } catch (error) {
             console.error('Error uploading image:', error);
+            process.exit(1);
         }
     }
 
