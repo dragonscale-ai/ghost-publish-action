@@ -139,7 +139,7 @@ function extractImagePaths(markdownContent) {
 /**
  * Upload an image file to Ghost and return the uploaded image URL
  */
-async function uploadImageToGhost(imagePath) {
+async function uploadImageToGhost(api, imagePath) {
     try {
         const uploadedImage = await api.images.upload({ file: imagePath });
         return uploadedImage.url;
