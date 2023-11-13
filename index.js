@@ -60,6 +60,9 @@ async function main() {
  */
 function getLatestFile(extension) {
     try {
+        // Print the Git version
+        console.log('Git Version:', execSync('git --version').toString().trim());
+
         // Print the current working directory
         console.log('Current working directory:', __dirname);
 
@@ -67,7 +70,7 @@ function getLatestFile(extension) {
         console.log('Directory contents:', execSync('ls -la').toString());
 
         // Execute the Git command
-        const command = `git diff --name-only HEAD HEAD~1 -- '*.${extension}'`;
+        const command = `git diff --name-only HEAD -- '*.${extension}'`;
         console.log('Executing command:', command); // Debug log
         const latestFile = execSync(command).toString().trim();
         console.log('Found file:', latestFile); // Debug log
