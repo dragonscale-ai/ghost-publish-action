@@ -2,8 +2,9 @@ const { execSync } = require('child_process');
 
 function installDependencies() {
     try {
+        const actionDir = __dirname;
         // Run yarn install or npm install
-        execSync('yarn install', { stdio: 'inherit' });
+        execSync('yarn install', { stdio: 'inherit', cwd: actionDir });
         console.log('Dependencies installed successfully.');
     } catch (error) {
         console.error('Error installing dependencies:', error);
