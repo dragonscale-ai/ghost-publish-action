@@ -66,9 +66,9 @@ jobs:
 ``` 
 
 ## TODO List
-- [ ] Setup proper build process instead on installing packages from index.js as documented here - https://docs.github.com/en/actions/creating-actions/creating-a-javascript-action#commit-tag-and-push-your-action-to-github
-- [ ] Add all the important metadata to action.yml
-- [ ] Add Apache License
+- [X] Setup proper build process instead on installing packages from index.js as documented here - https://docs.github.com/en/actions/creating-actions/creating-a-javascript-action#commit-tag-and-push-your-action-to-github
+- [X] Add all the important metadata to action.yml
+- [X] Add Apache License
 - [ ] Make the code more robust and handle errors better
     - [ ] Handle multiple markdown files in a single commit
     - [ ] Handle invalid metadata JSON and report errors
