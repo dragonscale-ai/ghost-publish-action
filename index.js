@@ -16,24 +16,10 @@ const { execSync } = require('child_process');
 const { log } = require('console');
 const { exit } = require('process');
 
-function installDependencies() {
-    try {
-        const actionDir = __dirname;
-        // Run yarn install or npm install
-        execSync('yarn install', { stdio: 'inherit', cwd: actionDir });
-        console.log('Dependencies installed successfully.');
-    } catch (error) {
-        console.error('Error installing dependencies:', error);
-        process.exit(1); // Exit if installation fails
-    }
-}
-
 /**
  * Main function for the action
  */
 async function main() {
-    installDependencies()
-
     const GhostAdminAPI = require('@tryghost/admin-api');
     const fs = require('fs');
 

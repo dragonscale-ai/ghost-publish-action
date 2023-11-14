@@ -10,5 +10,8 @@
     "@tryghost/admin-api": "^1.13.10",
     "form-data": "^4.0.0",
     "markdown-it": "^13.0.2"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.1"
   }
 }
