@@ -1,7 +1,9 @@
 name: 'Ghost Publish Action'
 author: 'Rohit <@milliondreams>'
-
 description: 'Publishes markdown to Ghost as post draft'
+branding:
+  icon: 'upload-cloud'
+  color: 'green'
 inputs:
   ghost_api_url:
     description: 'Ghost API URL'
