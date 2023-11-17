@@ -45,7 +45,12 @@ async function main() {
 
         const htmlContent = convertMarkdownToHTML(markdownContent); // Implement this function
         const jsonMetadataFile = latestMdFile.replace('.md', '.json');
-        const metadata = JSON.parse(fs.readFileSync(jsonMetadataFile, 'utf8'));
+        let metadata = JSON.parse(fs.readFileSync(jsonMetadataFile, 'utf8'));
+
+        // Upload feature image and update metadata
+        if (metadata.feature_image != null) {
+            metadata = await uploadFeatureImageAndReplaceUrl(api, metadata);
+        }
 
         // Create a new post in Ghost
         const response = await api.posts.add({
@@ -119,6 +124,27 @@ async function uploadImagesAndReplaceUrls(api, markdownContent) {
     }
 
     return updatedMarkdownContent;
+}
+
+/**
+ * Upload images found in Markdown content to Ghost and replace local URLs
+ */
+async function uploadFeatureImageAndReplaceUrl(api, metadata) {
+    // Deep copy
+    let updatedMetadata = JSON.parse(JSON.stringify(metadata));
+    const maybeFeatureImagePath = updatedMetadata.feature_image;
+
+    if (typeof maybeFeatureImagePath === 'string' && !maybeFeatureImagePath.startsWith('http')) {
+        try {
+            const uploadedImageUrl = await uploadImageToGhost(api, maybeFeatureImagePath);
+            updatedMetadata.feature_image = uploadedImageUrl;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            process.exit(1);
+        }
+    }
+
+    return updatedMetadata;
 }
 
 /**
