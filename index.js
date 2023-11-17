@@ -38,10 +38,12 @@ async function main() {
             process.exit(0);
         }
 
+        const markdownFileDir = latestMdFile.substring(0, latestMdFile.lastIndexOf('/'));
+
         let markdownContent = fs.readFileSync(latestMdFile, 'utf8');
 
         // Upload images and update Markdown content
-        markdownContent = await uploadImagesAndReplaceUrls(api, markdownContent);
+        markdownContent = await uploadImagesAndReplaceUrls(api, markdownContent, markdownFileDir);
 
         const htmlContent = convertMarkdownToHTML(markdownContent); // Implement this function
         const jsonMetadataFile = latestMdFile.replace('.md', '.json');
@@ -49,7 +51,7 @@ async function main() {
 
         // Upload feature image and update metadata
         if (metadata.feature_image != null) {
-            metadata = await uploadFeatureImageAndReplaceUrl(api, metadata);
+            metadata = await uploadFeatureImageAndReplaceUrl(api, metadata, markdownFileDir);
         }
 
         // Create a new post in Ghost
@@ -109,11 +111,13 @@ function convertMarkdownToHTML(markdown) {
 /**
  * Upload images found in Markdown content to Ghost and replace local URLs
  */
-async function uploadImagesAndReplaceUrls(api, markdownContent) {
+async function uploadImagesAndReplaceUrls(api, markdownContent, markdownFileDir) {
     let updatedMarkdownContent = markdownContent;
     const imagePaths = extractImagePaths(markdownContent);
+    const imageAbsolutePaths = imagePaths.map((path) => getAbsolutePath(path, markdownFileDir));
 
-    for (let imagePath of imagePaths) {
+
+    for (let imagePath of imageAbsolutePaths) {
         try {
             const uploadedImageUrl = await uploadImageToGhost(api, imagePath);
             updatedMarkdownContent = updatedMarkdownContent.replace(imagePath, uploadedImageUrl);
@@ -129,14 +133,15 @@ async function uploadImagesAndReplaceUrls(api, markdownContent) {
 /**
  * Upload images found in Markdown content to Ghost and replace local URLs
  */
-async function uploadFeatureImageAndReplaceUrl(api, metadata) {
+async function uploadFeatureImageAndReplaceUrl(api, metadata, markdownFileDir) {
     // Deep copy
     let updatedMetadata = JSON.parse(JSON.stringify(metadata));
     const maybeFeatureImagePath = updatedMetadata.feature_image;
 
-    if (typeof maybeFeatureImagePath === 'string' && !maybeFeatureImagePath.startsWith('http')) {
+    if (maybeFeatureImagePath) {
+        const featureImagePath = getAbsolutePath(maybeFeatureImagePath, markdownFileDir);
         try {
-            const uploadedImageUrl = await uploadImageToGhost(api, maybeFeatureImagePath);
+            const uploadedImageUrl = await uploadImageToGhost(api, featureImagePath);
             updatedMetadata.feature_image = uploadedImageUrl;
         } catch (error) {
             console.error('Error uploading image:', error);
@@ -160,6 +165,24 @@ function extractImagePaths(markdownContent) {
     }
 
     return paths;
+}
+
+/**
+ * If the image path is local, get absolute image path
+ */
+function getAbsolutePath(imagePath, markdownFileDirectory) {
+    if (imagePath.startsWith('/') || imagePath.startsWith('http')) {
+        return imagePath;
+    } else if (imagePath.startsWith('../')) {
+        const regex = /^(\.\.\/)*/;
+        const prefix = imagePath.match(regex)[0]
+        const numOfDirectoriesUp = prefix.length / 3;
+        const parentDirectory = markdownFileDirectory.split('/').slice(0, -numOfDirectoriesUp).join('/');
+        const rest = imagePath.slice(prefix.length)
+        return `${parentDirectory}/${rest}`
+    } else {
+        return `${markdownFileDirectory}/${imagePath}`;
+    }
 }
 
 /**
