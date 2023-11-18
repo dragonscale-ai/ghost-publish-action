@@ -114,12 +114,11 @@ function convertMarkdownToHTML(markdown) {
 async function uploadImagesAndReplaceUrls(api, markdownContent, markdownFileDir) {
     let updatedMarkdownContent = markdownContent;
     const imagePaths = extractImagePaths(markdownContent);
-    const imageAbsolutePaths = imagePaths.map((path) => getAbsolutePath(path, markdownFileDir));
 
-
-    for (let imagePath of imageAbsolutePaths) {
+    for (let imagePath of imagePaths) {
+        const imageAbsolutePath = getAbsolutePath(imagePath, markdownFileDir);
         try {
-            const uploadedImageUrl = await uploadImageToGhost(api, imagePath);
+            const uploadedImageUrl = await uploadImageToGhost(api, imageAbsolutePath);
             updatedMarkdownContent = updatedMarkdownContent.replace(imagePath, uploadedImageUrl);
         } catch (error) {
             console.error('Error uploading image:', error);
@@ -181,7 +180,7 @@ function getAbsolutePath(imagePath, markdownFileDirectory) {
         const numOfDirectoriesUp = prefix.length / 3;
         const parentDirectory = markdownFileDirectory.split('/').slice(0, -numOfDirectoriesUp).join('/');
         const rest = imagePath.slice(prefix.length)
-        return `${parentDirectory}/${rest}`
+        return parentDirectory.length > 0 ? `${parentDirectory}/${rest}` : rest;
     } else {
         return `${markdownFileDirectory}/${imagePath}`;
     }
