@@ -171,8 +171,10 @@ function extractImagePaths(markdownContent) {
  * If the image path is local, get absolute image path
  */
 function getAbsolutePath(imagePath, markdownFileDirectory) {
-    if (imagePath.startsWith('/') || imagePath.startsWith('http')) {
+    if (imagePath.startsWith('http')) {
         return imagePath;
+    } else if (imagePath.startsWith('/') ) {
+        return imagePath.slice(1);
     } else if (imagePath.startsWith('../')) {
         const regex = /^(\.\.\/)*/;
         const prefix = imagePath.match(regex)[0]
