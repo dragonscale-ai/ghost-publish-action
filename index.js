@@ -77,15 +77,15 @@ async function main() {
  * @param {string} extension - The file extension to filter the results by.
  * @returns {string} - The command string.
  */
-function getLatestFileCommand(filter, extension) {
-    return `git diff-tree --no-commit-id --name-only HEAD -r --diff-filter='${filter}' | grep '${extension}'`;
+function getLatestFileCommand(extension) {
+    return `git diff-tree --no-commit-id --name-only HEAD -r --diff-filter=AM | grep '${extension}'`;
 }
 
 /**
  * Executes a command to find the latest file with a specific extension in the Git repository.
  */
-function executeLatestFileCommand(filter, extension) {
-    const command = getLatestFileCommand(filter, extension);
+function executeLatestFileCommand(extension) {
+    const command = getLatestFileCommand(extension);
     console.log('Executing command:', command); // Debug log
     return execSync(command).toString().trim();
 }
@@ -109,14 +109,7 @@ function getLatestFile(extension) {
         // Show git log
         console.log("Git log:\n", execSync('git log --oneline -n 5').toString());
 
-        let latestFile;
-
-        try {
-            latestFile = executeLatestFileCommand('A', extension);
-        } catch (error) {
-            console.log(`No added '${extension}' file found with error:`, error);
-            latestFile = executeLatestFileCommand('M', extension);
-        }
+        let latestFile = executeLatestFileCommand('A', extension);
 
         console.log('Found file:', latestFile); // Debug log
         return latestFile || null;
