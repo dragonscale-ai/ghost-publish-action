@@ -109,7 +109,7 @@ function getLatestFile(extension) {
         // Show git log
         console.log("Git log:\n", execSync('git log --oneline -n 5').toString());
 
-        let latestFile = executeLatestFileCommand('A', extension);
+        let latestFile = executeLatestFileCommand(extension);
 
         console.log('Found file:', latestFile); // Debug log
         return latestFile || null;
