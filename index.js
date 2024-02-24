@@ -71,7 +71,29 @@ async function main() {
 }
 
 /**
+ * Returns a command string that can be used to retrieve the latest file with a specific extension from a Git repository.
+ *
+ * @param {string} filter - A filter used to specify the type of changes to include in the command.
+ * @param {string} extension - The file extension to filter the results by.
+ * @returns {string} - The command string.
+ */
+function getLatestFileCommand(filter, extension) {
+    return `git diff-tree --no-commit-id --name-only HEAD -r --diff-filter='${filter}' | grep '${extension}'`;
+}
+
+/**
+ * Executes a command to find the latest file with a specific extension in the Git repository.
+ */
+function executeLatestFileCommand(filter, extension) {
+    const command = getLatestFileCommand(filter, extension);
+    console.log('Executing command:', command); // Debug log
+    return execSync(command).toString().trim();
+}
+
+/**
  * Get the latest file with a specific extension from the last commit
+ * @param {string} extension - The file extension to search for
+ * @returns {string|null} - The path of the latest file with the specified extension, or null if no file is found
  */
 function getLatestFile(extension) {
     try {
@@ -87,10 +109,15 @@ function getLatestFile(extension) {
         // Show git log
         console.log("Git log:\n", execSync('git log --oneline -n 5').toString());
 
-        // Execute the Git command
-        const command = `git diff-tree --no-commit-id --name-only HEAD -r --diff-filter=AM | grep '${extension}$'`;
-        console.log('Executing command:', command); // Debug log
-        const latestFile = execSync(command).toString().trim();
+        let latestFile;
+
+        try {
+            latestFile = executeLatestFileCommand('A', extension);
+        } catch (error) {
+            console.log(`No added '${extension}' file found with error:`, error);
+            latestFile = executeLatestFileCommand('M', extension);
+        }
+
         console.log('Found file:', latestFile); // Debug log
         return latestFile || null;
     } catch (error) {
