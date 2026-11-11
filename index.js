@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 const { execSync } = require('child_process');
-const { log } = require('console');
-const { exit } = require('process');
 
 /**
  * Main function for the action
@@ -30,93 +28,89 @@ async function main() {
         version: 'v5.0'
     });
 
-    try {
-        const latestMdFile = getLatestFile('.md');
+    const markdownFiles = getChangedMarkdownFiles();
 
-        if (latestMdFile == null | latestMdFile == "") {
-            console.log("No markdown in HEAD commit");
-            process.exit(0);
+    if (markdownFiles.length === 0) {
+        console.log("No markdown posts in HEAD commit");
+        process.exit(0);
+    }
+
+    console.log(`Found ${markdownFiles.length} post(s):`, markdownFiles);
+
+    const failed = [];
+    for (const markdownFile of markdownFiles) {
+        try {
+            await publishPost(api, fs, markdownFile);
+        } catch (error) {
+            console.error(`Failed to create post for ${markdownFile}:`, error);
+            failed.push(markdownFile);
         }
+    }
 
-        const markdownFileDir = latestMdFile.substring(0, latestMdFile.lastIndexOf('/'));
-
-        let markdownContent = fs.readFileSync(latestMdFile, 'utf8');
-
-        // Upload images and update Markdown content
-        markdownContent = await uploadImagesAndReplaceUrls(api, markdownContent, markdownFileDir);
-
-        const htmlContent = convertMarkdownToHTML(markdownContent); // Implement this function
-        const jsonMetadataFile = latestMdFile.replace('.md', '.json');
-        let metadata = JSON.parse(fs.readFileSync(jsonMetadataFile, 'utf8'));
-
-        // Upload feature image and update metadata
-        if (metadata.feature_image != null) {
-            metadata = await uploadFeatureImageAndReplaceUrl(api, metadata, markdownFileDir);
-        }
-
-        // Create a new post in Ghost
-        const response = await api.posts.add({
-            ...metadata,
-            html: htmlContent,
-            status: 'draft'
-        }, {
-            source: 'html'
-        });
-
-        console.log('Post created:', response.url);
-    } catch (error) {
-        console.error('Failed to create post:', error);
+    if (failed.length > 0) {
+        console.error(`${failed.length} of ${markdownFiles.length} post(s) failed:`, failed);
         process.exit(1);
     }
 }
 
 /**
- * Returns a command string that can be used to retrieve the latest file with a specific extension from a Git repository.
- *
- * @param {string} filter - A filter used to specify the type of changes to include in the command.
- * @param {string} extension - The file extension to filter the results by.
- * @returns {string} - The command string.
+ * Create a Ghost draft from one Markdown file and its sibling JSON metadata file
  */
-function getLatestFileCommand(extension) {
-    return `git diff-tree --no-commit-id --name-only HEAD -r --diff-filter=AM | grep '${extension}'`;
-}
+async function publishPost(api, fs, markdownFile) {
+    const markdownFileDir = markdownFile.substring(0, markdownFile.lastIndexOf('/'));
 
-/**
- * Executes a command to find the latest file with a specific extension in the Git repository.
- */
-function executeLatestFileCommand(extension) {
-    const command = getLatestFileCommand(extension);
-    console.log('Executing command:', command); // Debug log
-    return execSync(command).toString().trim();
-}
+    let markdownContent = fs.readFileSync(markdownFile, 'utf8');
 
-/**
- * Get the latest file with a specific extension from the last commit
- * @param {string} extension - The file extension to search for
- * @returns {string|null} - The path of the latest file with the specified extension, or null if no file is found
- */
-function getLatestFile(extension) {
-    try {
-        // Print the Git version
-        console.log('Git Version:', execSync('git --version').toString().trim());
+    // Upload images and update Markdown content
+    markdownContent = await uploadImagesAndReplaceUrls(api, markdownContent, markdownFileDir);
 
-        // Print the current working directory
-        console.log('Current working directory:', __dirname);
+    const htmlContent = convertMarkdownToHTML(markdownContent);
+    const jsonMetadataFile = markdownFile.replace(/\.md$/, '.json');
+    let metadata = JSON.parse(fs.readFileSync(jsonMetadataFile, 'utf8'));
 
-        // List the contents of the current directory
-        console.log('Directory contents:', execSync('ls -la').toString());
-
-        // Show git log
-        console.log("Git log:\n", execSync('git log --oneline -n 5').toString());
-
-        let latestFile = executeLatestFileCommand(extension);
-
-        console.log('Found file:', latestFile); // Debug log
-        return latestFile || null;
-    } catch (error) {
-        console.error('Error finding the latest file:', error);
-        return null;
+    // Upload feature image and update metadata
+    if (metadata.feature_image != null) {
+        metadata = await uploadFeatureImageAndReplaceUrl(api, metadata, markdownFileDir);
     }
+
+    // Create a new post in Ghost
+    const response = await api.posts.add({
+        ...metadata,
+        html: htmlContent,
+        status: 'draft'
+    }, {
+        source: 'html'
+    });
+
+    console.log('Post created:', response.url);
+}
+
+/**
+ * Markdown files added or modified in the HEAD commit that have a sibling
+ * JSON metadata file (so README.md and similar files are skipped)
+ */
+function getChangedMarkdownFiles() {
+    const fs = require('fs');
+    return getChangedFiles()
+        .filter(file => file.endsWith('.md'))
+        .filter(file => {
+            const hasMetadata = fs.existsSync(file.replace(/\.md$/, '.json'));
+            if (!hasMetadata) console.log(`Skipping ${file}: no matching .json metadata file`);
+            return hasMetadata;
+        });
+}
+
+/**
+ * List the files added or modified in the HEAD commit
+ * @returns {string[]} - Paths relative to the repository root
+ */
+function getChangedFiles() {
+    console.log('Git Version:', execSync('git --version').toString().trim());
+    console.log("Git log:\n", execSync('git log --oneline -n 5').toString());
+
+    const command = 'git diff-tree --no-commit-id --name-only -r --diff-filter=AM HEAD';
+    console.log('Executing command:', command);
+    return execSync(command).toString().split('\n').map(line => line.trim()).filter(Boolean);
 }
 
 /**
@@ -141,8 +135,7 @@ async function uploadImagesAndReplaceUrls(api, markdownContent, markdownFileDir)
             const uploadedImageUrl = await uploadImageToGhost(api, imageAbsolutePath);
             updatedMarkdownContent = updatedMarkdownContent.replace(imagePath, uploadedImageUrl);
         } catch (error) {
-            console.error('Error uploading image:', error);
-            process.exit(1);
+            throw new Error(`Error uploading image ${imageAbsolutePath}: ${error.message}`);
         }
     }
 
@@ -163,8 +156,7 @@ async function uploadFeatureImageAndReplaceUrl(api, metadata, markdownFileDir) {
             const uploadedImageUrl = await uploadImageToGhost(api, featureImagePath);
             updatedMetadata.feature_image = uploadedImageUrl;
         } catch (error) {
-            console.error('Error uploading image:', error);
-            process.exit(1);
+            throw new Error(`Error uploading feature image ${featureImagePath}: ${error.message}`);
         }
     }
 
