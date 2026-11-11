@@ -22572,7 +22572,7 @@ async function main() {
     const markdownFiles = getChangedMarkdownFiles();
 
     if (markdownFiles.length === 0) {
-        console.log("No markdown posts in HEAD commit");
+        console.log("No posts changed in HEAD commit");
         process.exit(0);
     }
 
@@ -22600,14 +22600,16 @@ async function main() {
 async function publishPost(api, fs, markdownFile) {
     const markdownFileDir = markdownFile.substring(0, markdownFile.lastIndexOf('/'));
 
+    const jsonMetadataFile = markdownFile.replace(/\.md$/, '.json');
+    let metadata = JSON.parse(fs.readFileSync(jsonMetadataFile, 'utf8'));
+    validateMetadata(metadata, jsonMetadataFile);
+
     let markdownContent = fs.readFileSync(markdownFile, 'utf8');
 
     // Upload images and update Markdown content
     markdownContent = await uploadImagesAndReplaceUrls(api, markdownContent, markdownFileDir);
 
     const htmlContent = convertMarkdownToHTML(markdownContent);
-    const jsonMetadataFile = markdownFile.replace(/\.md$/, '.json');
-    let metadata = JSON.parse(fs.readFileSync(jsonMetadataFile, 'utf8'));
 
     // Upload feature image and update metadata
     if (metadata.feature_image != null) {
@@ -22627,18 +22629,43 @@ async function publishPost(api, fs, markdownFile) {
 }
 
 /**
- * Markdown files added or modified in the HEAD commit that have a sibling
- * JSON metadata file (so README.md and similar files are skipped)
+ * Posts whose Markdown or JSON metadata file was added or modified in the HEAD
+ * commit. A post is a .md file with a sibling .json file, so README.md and
+ * other JSON files are skipped.
  */
 function getChangedMarkdownFiles() {
     const fs = __nccwpck_require__(7147);
-    return getChangedFiles()
-        .filter(file => file.endsWith('.md'))
-        .filter(file => {
-            const hasMetadata = fs.existsSync(file.replace(/\.md$/, '.json'));
-            if (!hasMetadata) console.log(`Skipping ${file}: no matching .json metadata file`);
-            return hasMetadata;
-        });
+    const candidates = new Set();
+    for (const file of getChangedFiles()) {
+        if (file.endsWith('.md')) candidates.add(file);
+        else if (file.endsWith('.json')) candidates.add(file.replace(/\.json$/, '.md'));
+    }
+    return [...candidates].filter(file => {
+        const isPost = fs.existsSync(file) && fs.existsSync(file.replace(/\.md$/, '.json'));
+        if (!isPost) console.log(`Skipping ${file}: needs both a .md file and a matching .json metadata file`);
+        return isPost;
+    });
+}
+
+// Maximum lengths Ghost accepts for post metadata fields
+const METADATA_LIMITS = {
+    title: 255,
+    custom_excerpt: 300,
+    feature_image_alt: 191,
+    meta_title: 300,
+    meta_description: 500,
+};
+
+/**
+ * Throw if any metadata field is longer than Ghost allows, before anything is uploaded
+ */
+function validateMetadata(metadata, jsonMetadataFile) {
+    const problems = Object.entries(METADATA_LIMITS)
+        .filter(([field, max]) => typeof metadata[field] === 'string' && [...metadata[field]].length > max)
+        .map(([field, max]) => `${field} is ${[...metadata[field]].length} characters (maximum ${max})`);
+    if (problems.length > 0) {
+        throw new Error(`Invalid metadata in ${jsonMetadataFile}: ${problems.join('; ')}`);
+    }
 }
 
 /**
